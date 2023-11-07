@@ -4,16 +4,16 @@ import React, { useEffect, useState } from "react"
 import { Form, Table } from "react-bootstrap"
 import { apiData } from "./ApiContext"
 
-export const ApiCrud = () => {
-    let [userObj, setuserObj] = useState({})
-    let [userArr, setuserArr] = useState([])
-    let [blankObj, setblankObj] = useState({})
+export const FormDataApiCrud = () => {
+    let [userObj, setUserObj] = useState({})
+    let [userArr, setUserArr] = useState([])
+    let [blankObj, setBlankObj] = useState({})
 
     useEffect(() => {
         getData()
     }, [])
 
-    const saveData = async (e) => {
+    const saveData = (e) => {
         if (e.target.type === "checkbox") {
             userObj[e.target.name] = userObj[e.target.name] ?? []
             blankObj[e.target.name] = []
@@ -27,46 +27,93 @@ export const ApiCrud = () => {
                     (x) => x !== e.target.value
                 )
             }
+        } else if (e.target.type === "file") {
+            userObj[e.target.name] = e.target.files[0]
+            blankObj[e.target.name] = ""
         } else {
             userObj[e.target.name] = e.target.value
             blankObj[e.target.name] = ""
         }
-        setuserObj({ ...userObj })
-        setblankObj({ ...blankObj })
-    }
-
-    const submitData = () => {
-        // console.log(userObj._id)
-        if (userObj._id) {
-            userObj.id = userObj._id
-            axios
-                .post(
-                    "https://student-api.mycodelibraries.com/api/user/update",
-                    userObj
-                )
-                .then((response) => {
-                    getData()
-                })
-        } else {
-            axios
-                .post(
-                    "https://student-api.mycodelibraries.com/api/user/add",
-                    userObj
-                )
-                .then((response) => {
-                    getData()
-                })
-        }
-        setuserObj({ ...blankObj })
+        setUserObj({ ...userObj })
+        setBlankObj({ ...blankObj })
     }
 
     const getData = async () => {
         let a = await apiData()
-        setuserArr([...a])
+        setUserArr([...a])
     }
 
-    const editData = (x) => {
-        setuserObj({ ...x })
+    const addData = () => {
+        let formData = new FormData()
+
+        formData.append("firstName", userObj.firstName)
+        formData.append("lastName", userObj.lastName)
+        formData.append("age", userObj.age)
+        formData.append("gender", userObj.gender)
+        formData.append("hobbies", userObj.hobbies)
+        formData.append("city", userObj.city)
+        formData.append("userImage", userObj.userImage)
+
+        axios
+            .post(
+                "https://student-api.mycodelibraries.com/api/user/add",
+                formData
+            )
+            .then((response) => {
+                getData()
+            })
+        setUserObj({ ...blankObj })
+    }
+
+    const editUser = (x) => {
+        x.id = x._id
+        userObj = { ...x }
+        setUserObj({ ...userObj })
+        console.log(userObj)
+    }
+
+    const editData = async () => {
+        let formData = new FormData()
+
+        formData.append("firstName", userObj.firstName)
+        formData.append("lastName", userObj.lastName)
+        formData.append("age", userObj.age)
+        formData.append("gender", userObj.gender)
+        formData.append("hobbies", userObj.hobbies)
+        formData.append("city", userObj.city)
+        formData.append("userImage", userObj.userImage)
+        formData.append("id", userObj._id)
+
+        axios
+            .post(
+                "https://student-api.mycodelibraries.com/api/user/update",
+                formData
+            )
+            .then((response) => {
+                getData()
+            })
+            .catch((error) => {
+                console.log(error)
+            })
+    }
+
+    const submitData = () => {
+        if (userObj._id) {
+            editData()
+        } else {
+            addData()
+        }
+    }
+
+    const deleteData = (id) => {
+        axios
+            .delete(
+                "https://student-api.mycodelibraries.com/api/user/delete?id=" +
+                    id
+            )
+            .then((response) => {
+                getData()
+            })
     }
 
     const clearData = () => {
@@ -91,17 +138,7 @@ export const ApiCrud = () => {
             .catch((error) => {
                 console.log(error)
             })
-    }
-
-    const deleteData = (id) => {
-        axios
-            .delete(
-                "https://student-api.mycodelibraries.com/api/user/delete?id=" +
-                    id
-            )
-            .then((response) => {
-                getData()
-            })
+        setUserObj({ ...blankObj })
     }
 
     return (
@@ -203,11 +240,11 @@ export const ApiCrud = () => {
                             value={userObj.city ?? ""}
                             onChange={saveData}
                         />
-                        {/* <TextField
-                            name="image"
+                        <TextField
+                            name="userImage"
                             type="file"
                             onChange={saveData}
-                        /> */}
+                        />
                     </div>
                     <Button
                         sx={{ margin: "5px" }}
@@ -232,7 +269,7 @@ export const ApiCrud = () => {
                 hover>
                 <thead>
                     <tr>
-                        {/* <th>Profile Image</th> */}
+                        <th>Image</th>
                         <th>First Name</th>
                         <th>Last Name</th>
                         <th>Age</th>
@@ -246,23 +283,26 @@ export const ApiCrud = () => {
                     {userArr.map((x, i) => {
                         return (
                             <tr key={i}>
-                                {/* <td>
+                                <td>
                                     <img
+                                        className="rounded-circle"
                                         src={x.image}
                                         alt=""
-                                        width="50px"
-                                        height="50px"
+                                        width={50}
+                                        height={50}
                                     />
-                                </td> */}
-                                <td>{x.firstName}</td>
-                                <td>{x.lastName}</td>
-                                <td>{x.age}</td>
-                                <td>{x.gender}</td>
-                                <td>{x.hobbies.join(",")}</td>
-                                <td>{x.city}</td>
-                                <td className="d-flex justify-content-evenly">
+                                </td>
+                                <td style={{padding: "20px 0"}}>{x.firstName}</td>
+                                <td style={{padding: "20px 0"}}>{x.lastName}</td>
+                                <td style={{padding: "20px 0"}}>{x.age}</td>
+                                <td style={{padding: "20px 0"}}>{x.gender}</td>
+                                <td style={{padding: "20px 0"}}>{x.hobbies.join(",")}</td>
+                                <td style={{padding: "20px 0"}}>{x.city}</td>
+                                <td
+                                    className="d-flex justify-content-evenly"
+                                    style={{ padding: "15px 0" }}>
                                     <Button
-                                        onClick={() => editData(x)}
+                                        onClick={() => editUser(x)}
                                         variant="contained"
                                         color="info">
                                         Edit
